@@ -46,7 +46,7 @@ struct LeafNode: public Node {
 
     std::shared_ptr<LeafNode> next;
     std::vector<K> keys;
-    std::vector<D> data;
+    std::vector<D> data; // TODO change to pointers later
 
     // Insert key and data in sorted order
     void insert(const K k, const D d) {
@@ -64,6 +64,8 @@ template <typename K, typename D>
 class BPTree {
     std::shared_ptr<Node> root;
     const int b;
+    int _size;
+
 
     // only called when splitting root
     // NOTE: creates InternalNode as parent which contains 1 child (0 keys)
@@ -170,11 +172,88 @@ class BPTree {
         }
     }
 
+    std::shared_ptr<Node> find_node(const K& k) const {
+        if (root == nullptr) {
+            return nullptr;
+        }
+
+        // Otherwise search for the right node
+        auto current = root;
+
+        while (!current->is_leaf) {
+            auto temp = std::dynamic_pointer_cast<InternalNode<K>>(current);
+            int i = 0;
+            for (const auto key: temp->keys) {
+                if (k < key) {
+                    break;
+                }
+                ++i;
+            }
+            current = temp->children[i];
+        }
+
+        return current;
+    }
+
 public:
     // Default constructor
     BPTree(): b {4} {
         root = nullptr;
+        _size = 0;
     }
+
+    int size() const {
+        return _size;
+    }
+
+    std::shared_ptr<D> search(const K& k) const {
+        // Find the containing leaf node
+        auto node = find_node(k);
+
+        if (node == nullptr) {
+            return nullptr;
+        }
+
+        // Search the node
+        auto leaf = std::dynamic_pointer_cast<LeafNode<K, D>>(node);
+        for (int i = 0; i < leaf->keys.size(); ++i) {
+            if (k == leaf->keys[i]) {
+                // TODO fix later
+                auto temp = std::make_shared<D>(leaf->data[i]);
+                return temp;
+            }
+        }
+
+        return nullptr;
+    }
+
+    // maybe we could pass a compare operator that would allow a key to be compared
+    // to low and upper (so we could do < and <= on both upper and lower)
+    // or could pass two bools
+    std::vector<D> range_query(const K low, const K& hi) {
+
+        auto leaf = std::dynamic_pointer_cast<LeafNode<K, D>>(find_node(low));
+        std::vector<D> result;
+
+        while (leaf) {
+            // Find keys in range, and save data to result
+            auto i = std::lower_bound(leaf->keys.begin(), leaf->keys.end(), low);
+            auto j = std::upper_bound(leaf->keys.begin(), leaf->keys.end(), hi);
+
+            const auto data_i = leaf->data.begin() + (i - leaf->keys.begin());
+            const auto data_j = leaf->data.begin() + (j - leaf->keys.begin());
+
+            result.insert(result.end(), data_i, data_j);
+
+            if (j != leaf->keys.end()) {
+                break;
+            }
+
+            leaf = leaf->next;
+        }
+        return result;
+    }
+
 
     // Insert a record
     void insert(const K& k, const D& d) {
@@ -193,23 +272,12 @@ public:
         }
 
         // Otherwise search for the right node
-        auto current = root;
-
-        while (!current->is_leaf) {
-            auto temp = std::dynamic_pointer_cast<InternalNode<K>>(current);
-            int i = 0;
-            for (const auto key: temp->keys) {
-                if (k <= key) {
-                    break;
-                }
-                ++i;
-            }
-            current = temp->children[i];
-        }
+        auto current = find_node(k);
 
         // Insert into node and split if necessary
         auto temp = std::dynamic_pointer_cast<LeafNode<K, D>>(current);
         temp->insert(k, d);
+        ++_size;
 
         // Perform splitting procedure if node is full
         if (temp->keys.size() > b) {
@@ -233,4 +301,19 @@ int main() {
     }
 
     t.print();
+
+    for (int i = 0; i < 12; i++) {
+
+        auto x = t.search(i);
+
+        if (x == nullptr || *x != i) {
+            std::cout << "failed to find: " << i << std::endl;
+        }
+    }
+
+    auto r = t.range_query(4, 9);
+    for (const auto x: r) {
+        std::cout << x << ", ";
+    }
+    std::cout << std::endl;
 }
