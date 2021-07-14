@@ -9,8 +9,6 @@ Will support these SQL queries:
 The backend of the database is a generic B+ Tree
 
 TODO:
-* add private method searchnode and refactor 
-* add public method search(key)
-* add range query
+* bulk loading function
 * add a better printing function?
 * might want to keep track of min and max key
