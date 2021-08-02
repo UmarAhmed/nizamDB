@@ -105,15 +105,17 @@ class BPTree {
         for (int i = mid + 1; i < current->keys.size(); ++i) {
             new_node->keys.emplace_back(std::move(current->keys[i]));
             new_node->children.emplace_back(std::move(current->children[i]));
+            new_node->children.back()->parent = new_node;
         }
         new_node->children.emplace_back(std::move(current->children.back() ));
+        new_node->children.back()->parent = new_node;
 
         // Remove the items we copied
         current->keys.resize(mid);
         current->children.resize(mid + 1);
 
         // Handle splitting of ancestors if necessary
-        if (parent->keys.size() > b) {
+        if (parent->keys.size() == b) {
             split_internal(parent);
         }
     }
@@ -144,6 +146,7 @@ class BPTree {
         // Add key and child for new_node to parent, and split if necessary
         auto parent = std::dynamic_pointer_cast<InternalNode<K>>(leaf->parent);
         parent->insert(new_node->keys[0], new_node);
+
         if (parent->keys.size() == b) {
             split_internal(parent);
         }
@@ -240,7 +243,9 @@ public:
     // or could pass two bools
     // TODO generalize this
     std::vector<D> range_query(const K low, const K& hi) {
-
+        if (hi > low) {
+            return {};
+        }
         auto leaf = std::dynamic_pointer_cast<LeafNode<K, D>>(find_node(low));
         std::vector<D> result;
 
@@ -291,7 +296,7 @@ public:
         ++_size;
 
         // Perform splitting procedure if node is full
-        if (temp->keys.size() > b) {
+        if (temp->keys.size() == b) {
             split_leaf(temp);
         }
     }
