@@ -243,7 +243,7 @@ public:
     // or could pass two bools
     // TODO generalize this
     std::vector<D> range_query(const K low, const K& hi) {
-        if (hi > low) {
+        if (hi < low) {
             return {};
         }
         auto leaf = std::dynamic_pointer_cast<LeafNode<K, D>>(find_node(low));
