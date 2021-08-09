@@ -8,7 +8,7 @@ using namespace std;
 
 int main() {
     BPTree<int, int> t;
-    constexpr int N = 5000;
+    constexpr int N = 5175;
 
     std::random_device rd;  // used to obtain a seed for the random number engine
     const auto seed = rd();
@@ -21,6 +21,7 @@ int main() {
 
         if (t.size() != i + 1) {
             cout << "wrong size after insertion";
+            return 1;
         }   
     }
 
@@ -31,6 +32,7 @@ int main() {
 
         if (x == nullptr || *x != i) {
             std::cout << "failed to find: " << i << std::endl;
+            return 1;
         }
     }
     
@@ -48,6 +50,7 @@ int main() {
         for (int i = from; i <= until; ++i) {
             if (r[j] != i) {
                 std::cout << "error with result from range query" << std::endl;
+                return 1;
             }
             ++j;
         } 

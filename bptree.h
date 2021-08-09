@@ -187,14 +187,10 @@ class BPTree {
         auto current = root;
 
         while (!current->is_leaf) {
-            auto temp = std::dynamic_pointer_cast<InternalNode<K>>(current);
-            int i = 0;
-            for (const auto key: temp->keys) {
-                if (k < key) {
-                    break;
-                }
-                ++i;
-            }
+            const auto temp = std::dynamic_pointer_cast<InternalNode<K>>(current);
+            const auto it = std::upper_bound(temp->keys.begin(), temp->keys.end(), k);
+            const int i = it - temp->keys.begin();
+
             current = temp->children[i];
         }
 
@@ -227,21 +223,19 @@ public:
 
         // Search the node
         auto leaf = std::dynamic_pointer_cast<LeafNode<K, D>>(node);
-        for (int i = 0; i < leaf->keys.size(); ++i) {
-            if (k == leaf->keys[i]) {
-                // TODO fix later
-                auto temp = std::make_shared<D>(leaf->data[i]);
-                return temp;
-            }
+        const auto it = std::lower_bound(leaf->keys.begin(), leaf->keys.end(), k);
+        const int i = it - leaf->keys.begin();
+
+        if (k == leaf->keys[i]) {
+            auto temp = std::make_shared<D>(leaf->data[i]);
+            return temp;
         }
 
         return nullptr;
     }
 
-    // maybe we could pass a compare operator that would allow a key to be compared
-    // to low and upper (so we could do < and <= on both upper and lower)
-    // or could pass two bools
-    // TODO generalize this
+
+    // TODO generalize comparison operator
     std::vector<D> range_query(const K low, const K& hi) {
         if (hi < low) {
             return {};
@@ -251,8 +245,8 @@ public:
 
         while (leaf) {
             // Find keys in range, and save data to result
-            auto i = std::lower_bound(leaf->keys.begin(), leaf->keys.end(), low);
-            auto j = std::upper_bound(leaf->keys.begin(), leaf->keys.end(), hi);
+            const auto i = std::lower_bound(leaf->keys.begin(), leaf->keys.end(), low);
+            const auto j = std::upper_bound(leaf->keys.begin(), leaf->keys.end(), hi);
 
             const auto data_i = leaf->data.begin() + (i - leaf->keys.begin());
             const auto data_j = leaf->data.begin() + (j - leaf->keys.begin());
@@ -281,7 +275,6 @@ public:
             temp->parent = nullptr;
             temp->keys.push_back(k);
             temp->data.push_back(d);
-
 
             ++_size;
             return;
